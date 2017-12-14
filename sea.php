@@ -1,8 +1,10 @@
 <?php
+error_reporting(0);
 define('FLN',"sea.txt");//strange effect - define(FLN,"sea.txt") without quotes causes ternary not to work
 define('FLS',"opt.txt");
 define('FLV',"lvl.php");
-function map($aMap,$bLnk=false,$bSho=false,$sMcl="",$iSz=20){
+define('PFX',"sea");
+function map($aMap,$bLnk=false,$bSho=false,$sMcl="",$iSz=20){//draws a map
     if(!$aMap)for($i=0;$i<$iSz;$i++)$aMap[]=array_fill(0,$iSz,0);
     foreach($aMap as $i=>$mRow){
         foreach($mRow as $j=>$mCol){
@@ -23,7 +25,7 @@ function map($aMap,$bLnk=false,$bSho=false,$sMcl="",$iSz=20){
                 default:
                     $sCls="wat";//water
             }
-            $sLnk=($bLnk&&!in_array($sCls,["hit","fal","mis"]))?"<a href='?pos=$i-$j'>&nbsp;</a>":"";
+            $sLnk=($bLnk&&!in_array($sCls,["hit","fal","mis"]))?"<a href='?".PFX."[pos]=$i-$j'>&nbsp;</a>":"";
             $aRow[]="<td class='$sCls' title='$sTtl'>$sLnk</td>";
         }
         array_unshift($aRow,"<tr>");
@@ -90,7 +92,7 @@ function sca(array $aMap=null,$bWat=true){//find free shootable positions for co
                 elseif($bWat===true&&in_array($mCol,[0,1]))$mRes[]="$i-$j";//get shootable position
     return $mRes;
 }
-function nxt(array $aMap=null,string $sLst=null){//find next position(s) for computer shoot
+function nxt(array $aMap=null,$sLst=null){//find next position(s) for computer shoot
     $aNxt=$sNxt=$k=null;
     $iWid=count($aMap[0]);
     $iHei=count(array_keys($aMap));
@@ -136,10 +138,10 @@ function cpu(array $aMps=null){//computer shooting logic
     }
     return $aMps;
 }
-function pla(array $aMps=null){//player shooting logic
-    $aRes=$sPos=null;
+function pla(array $aMps=null,$sPos=null){//player shooting logic
+    $aRes=null;
     if($aMps&&is_array($aMps)){
-        if(in_array($sPos=$_REQUEST["pos"],sca($aMps["cpu"])))$aTmp["nxt"][]=explode("-",$sPos);//aiming only on free cells
+        if(in_array($sPos,sca($aMps["cpu"])))$aTmp["nxt"][]=explode("-",$sPos);//aiming only on free cells
         $aRes=cal($aMps["cpu"],$aTmp);//shoot
         $aMps["cpu"]=$aRes["map"];//change computer map
         if(in_array($aRes["res"],[-1,-2]))$aMps["pla_hit"]++;//count hits
@@ -347,7 +349,7 @@ function get($sFnm=FLN,$bArr=true){//reads last unserialized array of a file
     $mRes=($sLn&&$bArr)?unserialize($sLn):null;
     return $mRes;
 }
-function set(string $sStr=null,$sFnm=FLN,$iFlg=FILE_APPEND){//save string in file
+function set($sStr=null,$sFnm=FLN,$iFlg=FILE_APPEND){//save string in file
     $mRes=($sStr)?file_put_contents($sFnm,"$sStr\n",$iFlg):null;
     return $mRes;
 }
@@ -358,13 +360,13 @@ function del($sFnm=FLN){//delete file
 function mnu(){//game menu
     $sMnu=null;
     $aOpt=get(FLS);//get game options
-    $aOpt["lng"]=($_REQUEST["lng"])?:$aOpt["lng"];//gui language
+    $aOpt["lng"]=($_REQUEST[PFX]["lng"])?:$aOpt["lng"];//gui language
     $aOpt["lng"]=($aOpt["lng"])?:"en";//language default
-    $aOpt["msz"]=($_REQUEST["msz"])?:$aOpt["msz"];//map size
+    $aOpt["msz"]=($_REQUEST[PFX]["msz"])?:$aOpt["msz"];//map size
     $aOpt["msz"]=($aOpt["msz"])?:4;//map size default
-    $aOpt["gsz"]=($_REQUEST["gsz"])?:$aOpt["gsz"];//map size
+    $aOpt["gsz"]=($_REQUEST[PFX]["gsz"])?:$aOpt["gsz"];//map size
     $aOpt["gsz"]=($aOpt["gsz"])?:"mid";//map size default
-    $aOpt["des"]=($_REQUEST["des"])?:$aOpt["des"];//map design
+    $aOpt["des"]=($_REQUEST[PFX]["des"])?:$aOpt["des"];//map design
     $aOpt["des"]=($aOpt["des"])?:"stl";//map design default
     $mRes=set(serialize($aOpt),FLS,0);//save game options, 0 - no flags (replace file)
     $aLng=[
@@ -474,52 +476,52 @@ Site: http://graf.esy.es<br>",
 "gnm"=>"Морской бой"
 ]];
     extract($aLng[$aOpt["lng"]],EXTR_PREFIX_ALL,"sLng");//create language variables
-    $sResume=(get())?"<li><a href='?nxt=y'>$sLng_game_resume</a></li>":"";
-    if($_REQUEST["mnu"]){
+    $sResume=(get())?"<li><a href='?".PFX."[nxt]=y'>$sLng_game_resume</a></li>":"";
+    if($_REQUEST[PFX]["mnu"]){
         $sMnu="<ul class='mnu'>
-            <li><a href='?new=y'>$sLng_game_new</a></li>$sResume
-            <li><a href='?opt=y'>$sLng_game_options</a></li>
-            <li><a href='?inf=y'>$sLng_game_info</a></li>
+            <li><a href='?".PFX."[new]=y'>$sLng_game_new</a></li>$sResume
+            <li><a href='?".PFX."[opt]=y'>$sLng_game_options</a></li>
+            <li><a href='?".PFX."[inf]=y'>$sLng_game_info</a></li>
             </ul>";
-    }elseif($_REQUEST["opt"]){
+    }elseif($_REQUEST[PFX]["opt"]){
         $sMnu="<ul class='mnu opt'>
-            <li><a href='?opt_msz=y'>$sLng_msz</a></li>
-            <li><a href='?opt_gsz=y'>$sLng_gsz</a></li>
-            <li><a href='?opt_des=y'>$sLng_des</a></li>
-            <li><a href='?opt_lng=y'>$sLng_lng</a></li>
+            <li><a href='?".PFX."[opt_msz]=y'>$sLng_msz</a></li>
+            <li><a href='?".PFX."[opt_gsz]=y'>$sLng_gsz</a></li>
+            <li><a href='?".PFX."[opt_des]=y'>$sLng_des</a></li>
+            <li><a href='?".PFX."[opt_lng]=y'>$sLng_lng</a></li>
             </ul>";
-    }elseif($_REQUEST["opt_msz"]){
+    }elseif($_REQUEST[PFX]["opt_msz"]){
         $sMnu="<ul class='mnu opt'>
-            <li><a href='?msz=4&mnu=y'".(($aOpt["msz"]==4)?" class='act'":"").">4 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td></tr></table></li>
-            <li><a href='?msz=5&mnu=y'".(($aOpt["msz"]==5)?" class='act'":"").">5 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td><td></td></tr></table></li>
-            <li><a href='?msz=6&mnu=y'".(($aOpt["msz"]==6)?" class='act'":"").">6 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></li>
+            <li><a href='?".PFX."[msz]=4&".PFX."[mnu]=y'".(($aOpt["msz"]==4)?" class='act'":"").">4 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td></tr></table></li>
+            <li><a href='?".PFX."[msz]=5&".PFX."[mnu]=y'".(($aOpt["msz"]==5)?" class='act'":"").">5 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td><td></td></tr></table></li>
+            <li><a href='?".PFX."[msz]=6&".PFX."[mnu]=y'".(($aOpt["msz"]==6)?" class='act'":"").">6 $sLng_sqr</a><table class='map'><tr><td></td><td></td><td></td><td></td><td></td><td></td></tr></table></li>
             </ul>";
-    }elseif($_REQUEST["opt_gsz"]){
+    }elseif($_REQUEST[PFX]["opt_gsz"]){
         $sMnu="<ul class='mnu opt'>
-            <li><a href='?gsz=sml&mnu=y'".(($aOpt["gsz"]=="sml")?" class='act'":"").">$sLng_sml</a></li>
-            <li><a href='?gsz=mid&mnu=y'".(($aOpt["gsz"]=="mid")?" class='act'":"").">$sLng_mid</a></li>
-            <li><a href='?gsz=big&mnu=y'".(($aOpt["gsz"]=="big")?" class='act'":"").">$sLng_big</a></li>
+            <li><a href='?".PFX."[gsz]=sml&".PFX."[mnu]=y'".(($aOpt["gsz"]=="sml")?" class='act'":"").">$sLng_sml</a></li>
+            <li><a href='?".PFX."[gsz]=mid&".PFX."[mnu]=y'".(($aOpt["gsz"]=="mid")?" class='act'":"").">$sLng_mid</a></li>
+            <li><a href='?".PFX."[gsz]=big&".PFX."[mnu]=y'".(($aOpt["gsz"]=="big")?" class='act'":"").">$sLng_big</a></li>
             </ul>";
-    }elseif($_REQUEST["opt_des"]){
+    }elseif($_REQUEST[PFX]["opt_des"]){
         $sMnu="<ul class='mnu opt'>
-            <li><a href='?des=blk&mnu=y'".(($aOpt["des"]=="blk")?" class='act'":"").">$sLng_blk</a></li>
-            <li><a href='?des=stl&mnu=y'".(($aOpt["des"]=="stl")?" class='act'":"").">$sLng_stl</a></li>
-            <li><a href='?des=vec&mnu=y'".(($aOpt["des"]=="vec")?" class='act'":"").">$sLng_vec</a></li>
+            <li><a href='?".PFX."[des]=blk&".PFX."[mnu]=y'".(($aOpt["des"]=="blk")?" class='act'":"").">$sLng_blk</a></li>
+            <li><a href='?".PFX."[des]=stl&".PFX."[mnu]=y'".(($aOpt["des"]=="stl")?" class='act'":"").">$sLng_stl</a></li>
+            <li><a href='?".PFX."[des]=vec&".PFX."[mnu]=y'".(($aOpt["des"]=="vec")?" class='act'":"").">$sLng_vec</a></li>
             </ul>";
-    }elseif($_REQUEST["opt_lng"]){
+    }elseif($_REQUEST[PFX]["opt_lng"]){
         $sMnu="<ul class='mnu opt'>
-            <li><a href='?lng=en&mnu=y'".(($aOpt["lng"]=="en")?" class='act'":"").">$sLng_en</a></li>
-            <li><a href='?lng=ru&mnu=y'".(($aOpt["lng"]=="ru")?" class='act'":"").">$sLng_ru</a></li>
+            <li><a href='?".PFX."[lng]=en&".PFX."[mnu]=y'".(($aOpt["lng"]=="en")?" class='act'":"").">$sLng_en</a></li>
+            <li><a href='?".PFX."[lng]=ru&".PFX."[mnu]=y'".(($aOpt["lng"]=="ru")?" class='act'":"").">$sLng_ru</a></li>
             </ul>";
-    }elseif($_REQUEST["inf"]){
+    }elseif($_REQUEST[PFX]["inf"]){
         $sMnu="<ul class='mnu inf'>
             <li>$sLng_dsc</li>
             <li>$sLng_lic</li>
             <li>$sLng_tnx</li>
             <li>$sLng_cnt</li>
-            <li><a href='?mnu=y'>$sLng_mnu</a></li>
+            <li><a href='?".PFX."[mnu]=y'>$sLng_mnu</a></li>
             </ul>";
-    }else $sMnu="<form><button class='mnu' name='mnu' value='y' type='submit'>$sLng_mnu</button></form>";
+    }else $sMnu="<form><button class='mnu' name='".PFX."[mnu]' value='y' type='submit'>$sLng_mnu</button></form>";
     return $sMnu;
 }
 function sea(){//sea battle game logic
@@ -555,17 +557,17 @@ function sea(){//sea battle game logic
 "gnm"=>"Морской бой"
 ]];
     extract($aLng[$aOpt["lng"]],EXTR_PREFIX_ALL,"sLng");//create language variables
-    if($_REQUEST["new"])del();//clear history
+    if($_REQUEST[PFX]["new"])del();//clear history
     $aMps=(get())?:gen($aOpt["msz"]);//max ship size
     $aMps["pla_all"]=($aMps["pla_all"])?:sca($aMps["pla"],false);//get player's hittable cells count
     $aMps["cpu_all"]=($aMps["cpu_all"])?:sca($aMps["cpu"],false);//get cpu's hittable cells count
-    if($aMps["pla_hit"]<$aMps["cpu_all"])$aMps=pla($aMps);//calculate player's action
+    if($aMps["pla_hit"]<$aMps["cpu_all"])$aMps=pla($aMps,$_REQUEST[PFX]["pos"]);//calculate player's action
     if($aMps["pla_hit"]==$aMps["cpu_all"])$bCli=false;
     if($aMps["act"]&&$bCli)$aMps=cpu($aMps);//if user act and not won then cpu move
     if($aMps["cpu_hit"]==$aMps["pla_all"])$bCli=false;
     if(!$bCli){
         $sWnm=($aMps["pla_hit"]==$aMps["cpu_all"])?$sLng_pla:$sLng_cpu;
-        $sMes="<div class='mes'>$sWnm {$sLng_win}!<br><a href='?new=y' class='mes $sWnm'>{$sLng_game_new}?</a></div><br>";
+        $sMes="<div class='mes'>$sWnm {$sLng_win}!<br><a href='?".PFX."[new]=y' class='mes $sWnm'>{$sLng_game_new}?</a></div><br>";
     }
     $sHdr="<tr><td>{$sLng_res_for}</td><td>{$sLng_shot}</td><td>{$sLng_hit}</td><td>{$sLng_fall}</td><td>{$sLng_all}</td></tr>";
     $sUsr="<tr><td>$sLng_pla</td><td>{$aMps['pla_cnt']}</td><td>{$aMps['pla_hit']}</td><td>{$aMps['pla_fal']}</td><td>{$aMps['cpu_all']}</td></tr>";
@@ -576,8 +578,8 @@ function sea(){//sea battle game logic
     if($aMps["act"])$aTmp=set(serialize($aMps));//if user act then save game
     $sMps="<table class='maps'><tr><th>$sLng_pla</th><th>$sLng_cpu</th></tr><tr><td>$sPla_map</td><td>$sCpu_map</td></tr></table>";
     $sGnm="<div class='ttl'><a href='".$_SERVER["PHP_SELF"]."'>$sLng_gnm</a></div>";
-    $sImg=(!$_REQUEST&&file_exists("./pic/sea.jpg"))?"<img class='sea' src='/pic/sea.jpg' title='$sLng_gnm'>":"";
-    $sGui=($_REQUEST["pos"]||$_REQUEST["nxt"]||$_REQUEST["new"])?$sMes.$sMps.$sSum:"";
+    $sImg=(!$_REQUEST[PFX]&&file_exists(__DIR__."/pic/sea.jpg"))?"<img class='sea' src='./pic/sea.jpg' title='$sLng_gnm'>":"";
+    $sGui=($_REQUEST[PFX]["pos"]||$_REQUEST[PFX]["nxt"]||$_REQUEST[PFX]["new"])?$sMes.$sMps.$sSum:"";
     $sRes=$sGnm.$sImg.$sGui.$sMnu;
     $aRes["HTM"]=$sRes;
     $aRes["GNM"]=$sLng_gnm;
@@ -713,43 +715,43 @@ td.wat{
     background: blue;
 }
 .stl td.mat{
-    background: url(/pic/stl/shp.jpg) center center / contain no-repeat white;
+    background: url(./pic/stl/shp.jpg) center center / contain no-repeat white;
 }
 .stl.cpu td.mat{
-    background: url(/pic/stl/shp1.jpg) center center / contain no-repeat white;
+    background: url(./pic/stl/shp1.jpg) center center / contain no-repeat white;
 }
 .stl td.hit{
-    background: url(/pic/stl/shp_hit.jpg) center center / contain no-repeat pink;
+    background: url(./pic/stl/shp_hit.jpg) center center / contain no-repeat pink;
 }
 .stl.cpu td.hit{
-    background: url(/pic/stl/shp1_hit.jpg) center center / contain no-repeat pink;
+    background: url(./pic/stl/shp1_hit.jpg) center center / contain no-repeat pink;
 }
 .stl td.fal{
-    background: url(/pic/stl/shp_fal.jpg) center center / contain no-repeat red;
+    background: url(./pic/stl/shp_fal.jpg) center center / contain no-repeat red;
 }
 .stl.cpu td.fal{
-    background: url(/pic/stl/shp1_fal.jpg) center center / contain no-repeat red;
+    background: url(./pic/stl/shp1_fal.jpg) center center / contain no-repeat red;
 }
 .stl td.mis{
-    background: url(/pic/stl/mis.jpg) center center / contain no-repeat grey;
+    background: url(./pic/stl/mis.jpg) center center / contain no-repeat grey;
 }
 .stl td.wat{
-    background: url(/pic/stl/wat.jpg) center center / contain no-repeat blue;
+    background: url(./pic/stl/wat.jpg) center center / contain no-repeat blue;
 }
 .vec td.mat{
-    background: url(/pic/vec/shp.png) center center / contain no-repeat blue;
+    background: url(./pic/vec/shp.png) center center / contain no-repeat blue;
 }
 .vec td.hit{
-    background: url(/pic/vec/hit.png) center center / contain no-repeat blue;
+    background: url(./pic/vec/hit.png) center center / contain no-repeat blue;
 }
 .vec td.fal{
-    background: url(/pic/vec/fal.png) center center / contain no-repeat blue;
+    background: url(./pic/vec/fal.png) center center / contain no-repeat blue;
 }
 .vec td.mis{
-    background: url(/pic/vec/mis.png) center center / contain no-repeat blue;
+    background: url(./pic/vec/mis.png) center center / contain no-repeat blue;
 }
 .vec td.wat{
-    background: url(/pic/vec/wat.png) center center / contain no-repeat blue;
+    background: url(./pic/vec/wat.png) center center / contain no-repeat blue;
 }
 </style>
 <div class='sea'><?php echo $mRes["HTM"]?></div>
