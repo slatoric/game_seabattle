@@ -9,7 +9,6 @@ How to install:
 3. Open browser and go <site name>/sea.php
 
 P.S.: php-interpreter must be installed (for example, denwer or openserver)
-
 P.P.S.: "opt.txt" and "sea.txt" will be created automatically to save settings and game process
 
 ------------------------------------------------------------------------------
@@ -24,5 +23,4 @@ P.P.S.: "opt.txt" and "sea.txt" will be created automatically to save settings a
 3. Открыть браузер и перейти по адресу <имя сайта>/sea.php
 
 P.S.: php-интерпретатор должен быть установлен (например, denwer или openserver)
-
 P.P.S.: "opt.txt" и "sea.txt" будут созданы автоматически для сохранения настроек и процесса игры
