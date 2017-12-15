@@ -586,8 +586,10 @@ function sea(){//sea battle game logic
     return $aRes;
 }
 $mRes=sea();?>
+<!DOCTYPE html>
 <html>
 <head>
+<meta http-equiv=Content-Type content="text/html;charset=UTF-8">
 <title><?php echo $mRes["GNM"]?></title>
 </head>
 <body>
