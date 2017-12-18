@@ -122,12 +122,13 @@ function nxt(array $aMap=null,$sLst=null){//find next position(s) for computer s
     }
     return $aNxt;
 }
-function cpu(array $aMps=null){//computer shooting logic
+function cpu(array $aMps=null,$bRnd=false){//computer shooting logic
     $aRes=$sPos=null;
     if($aMps&&is_array($aMps)){
-        $aNxt=($aNxt)?:nxt($aMps["pla"]);//randomize
+        $aNxt=($aMps["nxt"]&&!$bRnd)?$aMps["nxt"]:nxt($aMps["pla"]);//randomize or around
         if($aNxt)$aTmp["nxt"][]=explode("-",array_shift($aNxt));//aiming
         $aRes=cal($aMps["pla"],$aTmp);//shoot
+        $aMps["cpu_lst"]=$aRes["pos"];//last shoot position
         $aMps["pla"]=$aRes["map"];//change user map
         if($aRes["res"]==-1&&!$aNxt)$aMps["nxt"]=nxt($aMps["pla"],$aRes["pos"]);//prepare for shoot around if hit and no next steps found
         elseif($aNxt&&$aRes["res"]!=-2)$aMps["nxt"]=$aNxt;//continue shooting around if not fall and next steps found
@@ -368,6 +369,8 @@ function mnu(){//game menu
     $aOpt["gsz"]=($aOpt["gsz"])?:"mid";//map size default
     $aOpt["des"]=($_REQUEST[PFX]["des"])?:$aOpt["des"];//map design
     $aOpt["des"]=($aOpt["des"])?:"stl";//map design default
+    $aOpt["rnd"]=($_REQUEST[PFX]["rnd"])?:$aOpt["rnd"];//random cpu shoot
+    $aOpt["rnd"]=($aOpt["rnd"])?:"no";//random cpu shoot default
     $mRes=set(serialize($aOpt),FLS,0);//save game options, 0 - no flags (replace file)
     $aLng=[
 //English words
@@ -386,6 +389,9 @@ function mnu(){//game menu
 "mid"=>"Middle",
 "big"=>"Big",
 "lng"=>"Language",
+"rnd"=>"Cpu shoot",
+"rno"=>"Around ship (harder)",
+"rye"=>"Random",
 "sqr"=>"block(s)",
 "en"=>"English",
 "ru"=>"Русский",
@@ -438,6 +444,9 @@ Site: http://graf.esy.es<br>",
 "mid"=>"Средний",
 "big"=>"Большой",
 "lng"=>"Язык интерфейса",
+"rnd"=>"Стрельба компьютера",
+"rno"=>"Вокруг корабля (сложнее)",
+"rye"=>"Случайная",
 "sqr"=>"блок(а/ов)",
 "en"=>"English",
 "ru"=>"Русский",
@@ -488,6 +497,7 @@ Site: http://graf.esy.es<br>",
             <li><a href='?".PFX."[opt_msz]=y'>$sLng_msz</a></li>
             <li><a href='?".PFX."[opt_gsz]=y'>$sLng_gsz</a></li>
             <li><a href='?".PFX."[opt_des]=y'>$sLng_des</a></li>
+            <li><a href='?".PFX."[opt_rnd]=y'>$sLng_rnd</a></li>
             <li><a href='?".PFX."[opt_lng]=y'>$sLng_lng</a></li>
             </ul>";
     }elseif($_REQUEST[PFX]["opt_msz"]){
@@ -501,6 +511,11 @@ Site: http://graf.esy.es<br>",
             <li><a href='?".PFX."[gsz]=sml&".PFX."[mnu]=y'".(($aOpt["gsz"]=="sml")?" class='act'":"").">$sLng_sml</a></li>
             <li><a href='?".PFX."[gsz]=mid&".PFX."[mnu]=y'".(($aOpt["gsz"]=="mid")?" class='act'":"").">$sLng_mid</a></li>
             <li><a href='?".PFX."[gsz]=big&".PFX."[mnu]=y'".(($aOpt["gsz"]=="big")?" class='act'":"").">$sLng_big</a></li>
+            </ul>";
+    }elseif($_REQUEST[PFX]["opt_rnd"]){
+        $sMnu="<ul class='mnu opt'>
+            <li><a href='?".PFX."[rnd]=no&".PFX."[mnu]=y'".(($aOpt["rnd"]=="no")?" class='act'":"").">$sLng_rno</a></li>
+            <li><a href='?".PFX."[rnd]=yes&".PFX."[mnu]=y'".(($aOpt["rnd"]=="yes")?" class='act'":"").">$sLng_rye</a></li>
             </ul>";
     }elseif($_REQUEST[PFX]["opt_des"]){
         $sMnu="<ul class='mnu opt'>
@@ -563,7 +578,7 @@ function sea(){//sea battle game logic
     $aMps["cpu_all"]=($aMps["cpu_all"])?:sca($aMps["cpu"],false);//get cpu's hittable cells count
     if($aMps["pla_hit"]<$aMps["cpu_all"])$aMps=pla($aMps,$_REQUEST[PFX]["pos"]);//calculate player's action
     if($aMps["pla_hit"]==$aMps["cpu_all"])$bCli=false;
-    if($aMps["act"]&&$bCli)$aMps=cpu($aMps);//if user act and not won then cpu move
+    if($aMps["act"]&&$bCli)$aMps=cpu($aMps,($aOpt["rnd"]=="yes")?:false);//if user act and not won then cpu move
     if($aMps["cpu_hit"]==$aMps["pla_all"])$bCli=false;
     if(!$bCli){
         $sWnm=($aMps["pla_hit"]==$aMps["cpu_all"])?$sLng_pla:$sLng_cpu;
